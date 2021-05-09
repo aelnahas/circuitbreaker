@@ -49,10 +49,49 @@ A basic usage can be seen in the ![Basic Example](examples/basic) implementation
 There are thresholds being used in the implementation to guide the interceptor throught the states. The following table describes them:
 
 
-| Name | Description | Type | Default |
-| --- | --- | --- | --- |
-| FailureRate | Acceptable rate of failures , if exceeded interceptor will switch to Open state | float64 | 10.0 |
-| RecoveryRate | in `Half-Open` state, this threshold is used to determine if the service being requested has "recovered" and it is okay to go back to `Closed` state | float64 | 10.0 |
-| CooldownDuration | the `duration` where the interceptor will remain in `open` and not forward any requests | time.Duration | 30 seconds |
-| MaxRequestOnHalfOpen | Number of requests that are allowed to be executed in Half-open state | int | 10 | 
+| Name | Description | Type | Default | SettingsOption |
+| --- | --- | --- | --- | --- |
+| FailureRate | Acceptable rate of failures , if exceeded interceptor will switch to `Open` state | float64 | 10.0 | WithFailureRate |
+| RecoveryRate | in `Half-Open` state, this threshold is used to determine if the service being requested has "recovered" and it is okay to go back to `Closed` state | float64 | 10.0 | WithRecoveryRate |
+| CooldownDuration | the `duration` where the interceptor will remain in `open` and not forward any requests | time.Duration | 30 seconds | WithCooldownDuration |
+| MaxRequestOnHalfOpen | Number of requests that are allowed to be executed in Half-open state | int | 10 | WithMaxRequestOnHalfOpen |
 
+
+### WindowSize
+ The implementation currently uses a fixed sliding window to collect metrics on the requests,and it builds an aggregate based on that. The size of this window is controlled by the `WindowSize` settings. By default, it is set to 100. 
+
+ This means the last `100` calls will be used to drive the aggregates, and older metrics are simply dropped.
+
+ can be modified by passing `circuitbreaker.WithWindowSize` `SettingsOption` to the  `circuitbreaker.NewSettings` constructor
+
+### IsSuccessful
+This is a callback handler that is used when the interceptor receives a response. This allows the caller to determine set their conditions for `success`. For instance, perhaps the service responds with a json that has more info on the error.
+
+By default if nothing is passed, the settings will use the following method to check if there is an error returned from the request.
+
+```go
+func DefaultIsSuccessful(resp *http.Response, err error) bool {
+	return err == nil
+}
+```
+
+ can be modified by passing `circuitbreaker.WithIsSuccessfulHandler` `SettingsOption` to the  `circuitbreaker.NewSettings` constructor
+
+
+
+### OnStateChange
+another callback that will be called whenever the intercepter switches states.
+
+You can use it to add your logs, or switch to cached values
+
+e.g.
+
+```go
+func (s *service) OnStateChange(name string, from circuitbreaker.State, to circuitbreaker.State, metrics circuitbreaker.Metrics) {
+	s.logger.Printf("intercepter %s metrics %+v\n", name, metrics)
+	s.logger.Printf("intercepter %s transitioning from %s to %s\n", name, from, to)
+
+}
+```
+
+ can be modified by passing `circuitbreaker.WithOnStateChangeHandler` `SettingsOption` to the  `circuitbreaker.NewSettings` constructor
