@@ -39,7 +39,7 @@ go get -u github.com/aelnahas/circuitbreaker
 ```
 
 ## Examples
-A basic usage can be seen in the ![Basic Example](examples/basic) implementation
+A basic usage can be seen in the [Basic Example](examples/basic) implementation
 
 
 ## Settings
