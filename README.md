@@ -3,15 +3,15 @@ This is a go implementation of the  Circuit Breaker pattern.
 
 ![Order and Payment Service REST](images/request_diagram.svg)
 
-Imagine you have two services, the order and payment services as shown on the diagram above. Now, suppose the Order service needs to make a request to the payment service, for example, to validate customer payment. There are possibly two kinds of failure that can occur in this situation:
+Imagine that you have two services, the orders and payments services as shown on the diagram above. Now, suppose the Orders service needs to make a request to the Payments service, for example, to validate customer payment. There are potentially two kinds of failure that can occur in this situation:
 
 - Short Intermittent Failures: These happen from time to time and are somewhate expected. For instance, if your service SLA maintains a 99% availablility, then there is a 1% chance any request could fail. In this case, retrying the request can remedy the situation.
 
 - Long Unanticipated Failures: this could be because the payment service is down due to deployment issue, or some production issue. In this situation retrying request probably wont help because of the nature and duration of the failure. 
 
-In fact, suppose that the order service blocks on these calls. Now, The order server can only do so many requests at a time. In the worst case, every one of your request to the orders service needs to make a failing call to the payment service. Eventually, you might run into a sitation where all the resources in the Order service have been exhausted and it cant take any more requests. As a result, the order service is effectively down, resulting in this cascading failure. 
+In fact, suppose that the orders service blocks on these calls. Now, The orders server can only do so many requests at a time. In the worst case, every one of your request to the orders service needs to make a failing call to the payment service. Eventually, you might run into a sitation where all the resources in the Order service have been exhausted and it cant take any more requests. As a result, the orders service is effectively down, resulting in this cascading failure. 
 
-To avoid this situation, it would have been better for the order service to not make anymore request to the payment service, and allow the payment service some timeout to recover. The order service could in the meantime simply fail the request immediately, or in a different situation return a cached value. This in a nutshell is the Circuit Breaker Pattern.
+To avoid this situation, it would have been better for the orders service to not make anymore request to the payment service, and allow the payment service some timeout to recover. The orders service could in the meantime simply fail the request immediately, or in a different situation return a cached value. This in a nutshell is the Circuit Breaker Pattern.
 
 The Circuit breaker pattern, helps alleviate failing requests by acting as a request interceptor. The Interceptor manages the requests by using a state machine that looks like the following diagram:
 
