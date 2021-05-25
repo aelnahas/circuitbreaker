@@ -3,17 +3,20 @@ package circuitbreaker
 import (
 	"net/http"
 	"time"
+
+	"github.com/aelnahas/circuitbreaker/circuitbreaker/gauges"
 )
 
 type IsSuccessfulHandler func(*http.Response, error) bool
 type CallbackHandler func(*http.Response, error) (interface{}, error)
-type OnStateChangeHandler func(name string, from State, to State, metrics Metrics)
+type OnStateChangeHandler func(name string, from State, to State)
 
 type Thresholds struct {
 	FailureRate          float64
 	RecoveryRate         float64
 	CooldownDuration     time.Duration
 	MaxRequestOnHalfOpen int
+	MinRequests          int
 }
 
 type Settings struct {
@@ -22,6 +25,7 @@ type Settings struct {
 	Thresholds    Thresholds
 	IsSuccessful  IsSuccessfulHandler
 	OnStateChange OnStateChangeHandler
+	Gauge         gauges.Gauge
 }
 
 const DefaultFailureRate float64 = 10.0
@@ -29,6 +33,7 @@ const DefaultRecoveryRate float64 = 10.0
 const DefaultCooldownDuration time.Duration = 30 * time.Second
 const DefaultWindowSize int = 100
 const DefaultMaxRequestOnHalfOpen int = 10
+const DefaultMinRequests int = 10
 
 func DefaultIsSuccessful(resp *http.Response, err error) bool {
 	return err == nil
@@ -42,12 +47,13 @@ func NewSettings(name string, opts ...SettingsOption) (*Settings, error) {
 		RecoveryRate:         DefaultRecoveryRate,
 		CooldownDuration:     DefaultCooldownDuration,
 		MaxRequestOnHalfOpen: DefaultMaxRequestOnHalfOpen,
+		MinRequests:          DefaultMinRequests,
 	}
 	settings := &Settings{
 		Name:         name,
 		Thresholds:   thresholds,
-		WindowSize:   DefaultWindowSize,
 		IsSuccessful: DefaultIsSuccessful,
+		Gauge:        gauges.NewFixedWindowGauge(DefaultWindowSize),
 	}
 
 	for _, opt := range opts {
@@ -78,10 +84,6 @@ func (s *Settings) Validate() error {
 		return ErrInvalidSettingParam{Param: "MaxRequestOnHalfOpen", Val: s.Thresholds.MaxRequestOnHalfOpen}
 	}
 
-	if s.WindowSize <= 0 {
-		return ErrInvalidSettingParam{Param: "WindowSize", Val: s.WindowSize}
-	}
-
 	if s.IsSuccessful == nil {
 		return ErrInvalidSettingParam{Param: "IsSuccessful", Val: nil}
 	}
@@ -107,12 +109,6 @@ func WithCooldownDuration(duration time.Duration) SettingsOption {
 	}
 }
 
-func WithWindowSize(size int) SettingsOption {
-	return func(s *Settings) {
-		s.WindowSize = size
-	}
-}
-
 func WithIsSuccessfulHandler(handler IsSuccessfulHandler) SettingsOption {
 	return func(s *Settings) {
 		s.IsSuccessful = handler
@@ -128,5 +124,17 @@ func WithOnStateChangeHandler(handler OnStateChangeHandler) SettingsOption {
 func WithMaxRequestOnHalfOpen(max int) SettingsOption {
 	return func(s *Settings) {
 		s.Thresholds.MaxRequestOnHalfOpen = max
+	}
+}
+
+func WithMinRequest(min int) SettingsOption {
+	return func(s *Settings) {
+		s.Thresholds.MinRequests = min
+	}
+}
+
+func WithGauge(gauge gauges.Gauge) SettingsOption {
+	return func(s *Settings) {
+		s.Gauge = gauge
 	}
 }

@@ -2,6 +2,8 @@ package circuitbreaker
 
 import (
 	"time"
+
+	"github.com/aelnahas/circuitbreaker/circuitbreaker/gauges"
 )
 
 type State int
@@ -26,34 +28,29 @@ func (s State) String() string {
 }
 
 type stateMachine struct {
-	state          State
-	metricRecorder MetricsRecorder
-	requestCount   int
-	thresholds     Thresholds
-	timer          *time.Timer
+	state         State
+	gauge         gauges.Gauge
+	requestCount  int
+	thresholds    Thresholds
+	timer         *time.Timer
+	onStateChange func(from, to State)
 }
 
-func NewStateMachine(windowSize int, thresholds Thresholds) *stateMachine {
+func NewStateMachine(gauge gauges.Gauge, thresholds Thresholds, onStateChange func(from, to State)) *stateMachine {
 	return &stateMachine{
-		metricRecorder: NewFixedSizeSlidingWindowMetrics(windowSize),
-		state:          Closed,
-		thresholds:     thresholds,
+		gauge:         gauge,
+		state:         Closed,
+		thresholds:    thresholds,
+		onStateChange: onStateChange,
 	}
 }
 
-func NewMachineWithMetricRecorder(recorder MetricsRecorder, thresholds Thresholds) *stateMachine {
-	return &stateMachine{
-		metricRecorder: recorder,
-		state:          Closed,
-		thresholds:     thresholds,
-	}
-}
-
-func (sm *stateMachine) ReportOutcome(outcome Outcome) (State, error) {
+func (sm *stateMachine) ReportOutcome(outcome gauges.Outcome) (State, error) {
 	if !sm.ShouldMakeRequests() {
 		return sm.state, ErrRequestNotPermitted{State: sm.state}
 	}
-	sm.metricRecorder.Record(outcome)
+
+	sm.gauge.LogReading(outcome)
 	if sm.state == HalfOpen && sm.requestCount <= sm.thresholds.MaxRequestOnHalfOpen {
 		sm.requestCount++
 	}
@@ -63,7 +60,7 @@ func (sm *stateMachine) ReportOutcome(outcome Outcome) (State, error) {
 
 func (sm *stateMachine) Reset() {
 	sm.state = Closed
-	sm.metricRecorder.Reset()
+	sm.gauge.Reset()
 }
 
 func (sm *stateMachine) TransitionState(target State) {
@@ -99,12 +96,12 @@ func (sm *stateMachine) RequestCount() int {
 }
 
 func (sm *stateMachine) updateState() {
-	metrics := sm.metricRecorder.Metrics()
+	metrics := sm.gauge.OverallAggregate()
 
-	if sm.state == Closed && metrics.FailureRate > sm.thresholds.FailureRate {
+	if metrics.RequestCount >= sm.thresholds.MinRequests && sm.state == Closed && metrics.FailureRate() > sm.thresholds.FailureRate {
 		sm.TransitionState(Open)
 	} else if sm.state == HalfOpen && sm.requestCount > sm.thresholds.MaxRequestOnHalfOpen {
-		if metrics.SuccessRate >= sm.thresholds.RecoveryRate {
+		if metrics.SuccessRate() >= sm.thresholds.RecoveryRate {
 			sm.TransitionState(Closed)
 		} else {
 			sm.TransitionState(Open)
@@ -119,7 +116,8 @@ func (sm *stateMachine) transitionToOpen() {
 
 func (sm *stateMachine) transitionToHalfOpen() {
 	sm.state = HalfOpen
-	sm.metricRecorder.Reset()
+	sm.gauge.Reset()
+	sm.onStateChange(Open, HalfOpen)
 }
 
 func (sm *stateMachine) transitionToClosed() {

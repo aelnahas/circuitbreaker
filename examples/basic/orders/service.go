@@ -83,8 +83,6 @@ func (s *service) isSuccessful(res *http.Response, err error) bool {
 	return err == nil && res.StatusCode < 500
 }
 
-func (s *service) OnStateChange(name string, from circuitbreaker.State, to circuitbreaker.State, metrics circuitbreaker.Metrics) {
-	s.logger.Printf("intercepter %s metrics %+v\n", name, metrics)
+func (s *service) OnStateChange(name string, from circuitbreaker.State, to circuitbreaker.State) {
 	s.logger.Printf("intercepter %s transitioning from %s to %s\n", name, from, to)
-
 }

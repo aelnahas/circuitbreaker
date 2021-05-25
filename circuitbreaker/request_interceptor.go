@@ -3,6 +3,8 @@ package circuitbreaker
 import (
 	"net/http"
 	"sync"
+
+	"github.com/aelnahas/circuitbreaker/circuitbreaker/gauges"
 )
 
 type ExecuteHandler func(name string) (*http.Response, error)
@@ -28,9 +30,9 @@ func NewRequestInterceptorWithSettings(settings *Settings) (*RequestInterceptor,
 	}
 
 	ri := &RequestInterceptor{
-		Settings:     settings,
-		stateMachine: NewStateMachine(settings.WindowSize, settings.Thresholds),
+		Settings: settings,
 	}
+	ri.stateMachine = NewStateMachine(settings.Gauge, settings.Thresholds, ri.onStateChange)
 	return ri, nil
 }
 
@@ -52,22 +54,18 @@ func (ri *RequestInterceptor) Execute(handler ExecuteHandler) (*http.Response, e
 
 	resp, err := handler(ri.Settings.Name)
 
-	var outcome Outcome
+	var outcome gauges.Outcome
 
 	if ri.Settings.IsSuccessful(resp, err) {
-		outcome = Succeeded
+		outcome = gauges.Success
 	} else {
-		outcome = Failed
+		outcome = gauges.Failure
 	}
 
 	state, err := ri.stateMachine.ReportOutcome(outcome)
 
-	if err != nil {
-		return nil, err
-	}
-
 	if state != prev {
-		ri.Settings.OnStateChange(ri.Settings.Name, prev, state, ri.stateMachine.metricRecorder.Metrics())
+		ri.Settings.OnStateChange(ri.Settings.Name, prev, state)
 	}
 
 	return resp, err
@@ -83,4 +81,8 @@ func (ri *RequestInterceptor) ForceState(state State) {
 	ri.mutex.Lock()
 	defer ri.mutex.Unlock()
 	ri.stateMachine.TransitionState(state)
+}
+
+func (ri *RequestInterceptor) onStateChange(from, to State) {
+	ri.Settings.OnStateChange(ri.Settings.Name, from, to)
 }

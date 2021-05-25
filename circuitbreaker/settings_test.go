@@ -27,25 +27,25 @@ func compareSettings(t *testing.T, expected, actual *circuitbreaker.Settings) {
 	t.Run("TestThresholds", func(t *testing.T) {
 		t.Run("TestCooldownDuration", func(t *testing.T) {
 			if expected.Thresholds.CooldownDuration != actual.Thresholds.CooldownDuration {
-				t.Errorf("Settings.Thresholds.CooldownDuration expected %d, got %d", expected.Thresholds.CooldownDuration, actual.Thresholds.CooldownDuration)
+				t.Errorf("expected %d, got %d", expected.Thresholds.CooldownDuration, actual.Thresholds.CooldownDuration)
 			}
 		})
 
 		t.Run("TestFailureRate", func(t *testing.T) {
 			if expected.Thresholds.FailureRate != actual.Thresholds.FailureRate {
-				t.Errorf("Settings.Thresholds.FailureRate expected %f, got %f", expected.Thresholds.FailureRate, actual.Thresholds.FailureRate)
+				t.Errorf("expected %f, got %f", expected.Thresholds.FailureRate, actual.Thresholds.FailureRate)
 			}
 		})
 
 		t.Run("TestRecoveryRate", func(t *testing.T) {
 			if expected.Thresholds.RecoveryRate != actual.Thresholds.RecoveryRate {
-				t.Errorf("Settings.Thresholds.RecoveryRate expected %f, got %f", expected.Thresholds.RecoveryRate, actual.Thresholds.RecoveryRate)
+				t.Errorf("expected %f, got %f", expected.Thresholds.RecoveryRate, actual.Thresholds.RecoveryRate)
 			}
 		})
 
 		t.Run("TestMaxRequestOnHalfOpen", func(t *testing.T) {
 			if expected.Thresholds.MaxRequestOnHalfOpen != actual.Thresholds.MaxRequestOnHalfOpen {
-				t.Errorf("Settings.Thresholds.MaxRequestOnHalfOpen expected %d, got %d", expected.Thresholds.MaxRequestOnHalfOpen, actual.Thresholds.MaxRequestOnHalfOpen)
+				t.Errorf("expected %d, got %d", expected.Thresholds.MaxRequestOnHalfOpen, actual.Thresholds.MaxRequestOnHalfOpen)
 			}
 		})
 	})
@@ -53,12 +53,6 @@ func compareSettings(t *testing.T, expected, actual *circuitbreaker.Settings) {
 	t.Run("TestName", func(t *testing.T) {
 		if expected.Name != actual.Name {
 			t.Errorf("Settings.Name expected %s, got %s", expected.Name, actual.Name)
-		}
-	})
-
-	t.Run("TestWindowSize", func(t *testing.T) {
-		if expected.WindowSize != actual.WindowSize {
-			t.Errorf("Settings.WindowSize expected %d, got %d", expected.WindowSize, actual.WindowSize)
 		}
 	})
 
@@ -185,41 +179,6 @@ func TestWithCooldownDuration(t *testing.T) {
 		if settings != nil {
 			t.Fatalf("Test_InvalidRate, duration = %d, expected function to return nil settings, got %+v", val, settings)
 		}
-	})
-}
-
-func TestWithWindowSizeSettingOption(t *testing.T) {
-	t.Run("Test_WithValidWindowSize", func(t *testing.T) {
-		name := "withWindowSize"
-		expected := defaultSettings(name)
-		size := expected.WindowSize + 10
-		expected.WindowSize = size
-
-		settings, err := circuitbreaker.NewSettings(name, circuitbreaker.WithWindowSize(size))
-
-		if err != nil {
-			t.Errorf("NewSetttings(%s, circuitbreaker.WindowSize(%d)) expected no errors got %s", name, size, err.Error())
-		}
-
-		compareSettings(t, expected, settings)
-	})
-
-	t.Run("Test_InvalidSize", func(t *testing.T) {
-		invalidValues := []int{-1, 0}
-
-		for _, val := range invalidValues {
-			settings, err := circuitbreaker.NewSettings("test", circuitbreaker.WithWindowSize(val))
-
-			expectedError := circuitbreaker.ErrInvalidSettingParam{Param: "WindowSize", Val: val}
-
-			if err != expectedError {
-				t.Fatalf("Test_InvalidRate, rate = %d, expected error to be '%s', got '%s'", val, expectedError, err)
-			}
-			if settings != nil {
-				t.Fatalf("Test_InvalidRate, rate = %d, expected function to return nil settings, got %+v", val, settings)
-			}
-		}
-
 	})
 }
 

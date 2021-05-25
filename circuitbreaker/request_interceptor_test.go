@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/aelnahas/circuitbreaker/circuitbreaker"
+	"github.com/aelnahas/circuitbreaker/circuitbreaker/gauges"
 )
 
 type TestExecuter struct {
@@ -44,7 +45,8 @@ func TestExecuterNoRequestsPermitted(t *testing.T) {
 		return &http.Response{}, nil
 	}
 
-	settings, _ := circuitbreaker.NewSettings("test", circuitbreaker.WithIsSuccessfulHandler(IsSuccessful), circuitbreaker.WithFailureRate(1), circuitbreaker.WithWindowSize(1))
+	gauge := gauges.NewFixedWindowGauge(1)
+	settings, _ := circuitbreaker.NewSettings("test", circuitbreaker.WithIsSuccessfulHandler(IsSuccessful), circuitbreaker.WithFailureRate(1), circuitbreaker.WithGauge(gauge))
 	cb, err := circuitbreaker.NewRequestInterceptorWithSettings(settings)
 
 	if err != nil {
@@ -82,7 +84,8 @@ func TestExecuterRequestsPermitted(t *testing.T) {
 		return resp, nil
 	}
 
-	settings, _ := circuitbreaker.NewSettings("test", circuitbreaker.WithIsSuccessfulHandler(IsSuccessful), circuitbreaker.WithFailureRate(1), circuitbreaker.WithWindowSize(1))
+	gauge := gauges.NewFixedWindowGauge(1)
+	settings, _ := circuitbreaker.NewSettings("test", circuitbreaker.WithIsSuccessfulHandler(IsSuccessful), circuitbreaker.WithFailureRate(1), circuitbreaker.WithGauge(gauge))
 	cb, err := circuitbreaker.NewRequestInterceptorWithSettings(settings)
 
 	if err != nil {
@@ -118,7 +121,8 @@ func TestMonitorReset(t *testing.T) {
 		return resp, nil
 	}
 
-	settings, _ := circuitbreaker.NewSettings("test", circuitbreaker.WithIsSuccessfulHandler(IsSuccessful), circuitbreaker.WithFailureRate(1), circuitbreaker.WithWindowSize(1))
+	gauge := gauges.NewFixedWindowGauge(1)
+	settings, _ := circuitbreaker.NewSettings("test", circuitbreaker.WithIsSuccessfulHandler(IsSuccessful), circuitbreaker.WithFailureRate(1), circuitbreaker.WithGauge(gauge))
 	cb, err := circuitbreaker.NewRequestInterceptorWithSettings(settings)
 
 	if err != nil {
