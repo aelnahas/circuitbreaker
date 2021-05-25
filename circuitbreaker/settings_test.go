@@ -11,8 +11,7 @@ import (
 
 func defaultSettings(name string) *circuitbreaker.Settings {
 	return &circuitbreaker.Settings{
-		Name:       name,
-		WindowSize: circuitbreaker.DefaultWindowSize,
+		Name: name,
 		Thresholds: circuitbreaker.Thresholds{
 			MaxRequestOnHalfOpen: circuitbreaker.DefaultMaxRequestOnHalfOpen,
 			FailureRate:          circuitbreaker.DefaultFailureRate,

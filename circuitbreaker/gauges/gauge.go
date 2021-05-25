@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// Outcome is a type used to describe the different request outcomes
 type Outcome int
 
 const (
@@ -23,9 +24,13 @@ func (o Outcome) String() string {
 	}
 }
 
+// Aggregate is used to keep track of the current performance of the outbound requests
 type Aggregate struct {
+	// Keep track of total requests in the snapshot
 	RequestCount int
+	// Keep track of requests that have failed
 	FailureCount int
+	// Keep track of request that succeeded
 	SuccessCount int
 }
 
@@ -66,9 +71,14 @@ func (a *Aggregate) SuccessRate() float64 {
 	return 0
 }
 
+// Gauge provides an interface to logging and aggregating request results, mainly will be used
+// by the state machine to be determine which state it is in
 type Gauge interface {
+	// Log outcom of a new request
 	LogReading(Outcome)
+	// Get Aggregate results so far
 	OverallAggregate() Aggregate
+	// Reset the gauge
 	Reset()
 }
 

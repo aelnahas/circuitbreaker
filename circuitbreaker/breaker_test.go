@@ -15,7 +15,7 @@ type TestExecuter struct {
 
 func TestExecuteNilHandler(t *testing.T) {
 	t.Run("NilExecuter", func(t *testing.T) {
-		cb, err := circuitbreaker.NewRequestInterceptor("test")
+		cb, err := circuitbreaker.NewBreaker("test")
 
 		if err != nil {
 			t.Errorf("circuitbreaker.NewMonitor, expected no err, got %s", err)
@@ -47,7 +47,7 @@ func TestExecuterNoRequestsPermitted(t *testing.T) {
 
 	gauge := gauges.NewFixedWindowGauge(1)
 	settings, _ := circuitbreaker.NewSettings("test", circuitbreaker.WithIsSuccessfulHandler(IsSuccessful), circuitbreaker.WithFailureRate(1), circuitbreaker.WithGauge(gauge))
-	cb, err := circuitbreaker.NewRequestInterceptorWithSettings(settings)
+	cb, err := circuitbreaker.NewBreakerWithSettings(settings)
 
 	if err != nil {
 		t.Errorf("Monitor.NewMonitor, expected no err, got %s", err)
@@ -86,7 +86,7 @@ func TestExecuterRequestsPermitted(t *testing.T) {
 
 	gauge := gauges.NewFixedWindowGauge(1)
 	settings, _ := circuitbreaker.NewSettings("test", circuitbreaker.WithIsSuccessfulHandler(IsSuccessful), circuitbreaker.WithFailureRate(1), circuitbreaker.WithGauge(gauge))
-	cb, err := circuitbreaker.NewRequestInterceptorWithSettings(settings)
+	cb, err := circuitbreaker.NewBreakerWithSettings(settings)
 
 	if err != nil {
 		t.Errorf("circuitbreaker.NewMonitor, expected no err, got %s", err)
@@ -123,7 +123,7 @@ func TestMonitorReset(t *testing.T) {
 
 	gauge := gauges.NewFixedWindowGauge(1)
 	settings, _ := circuitbreaker.NewSettings("test", circuitbreaker.WithIsSuccessfulHandler(IsSuccessful), circuitbreaker.WithFailureRate(1), circuitbreaker.WithGauge(gauge))
-	cb, err := circuitbreaker.NewRequestInterceptorWithSettings(settings)
+	cb, err := circuitbreaker.NewBreakerWithSettings(settings)
 
 	if err != nil {
 		t.Errorf("Monitor.NewMonitor, expected no err, got %s", err)

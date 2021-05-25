@@ -1,5 +1,8 @@
 package gauges
 
+// FixedWindowGauge collects and aggregates outcomes from previous requests
+// It has a fixed window size N. If requests happened more than N requests ago then they get
+// evicted from the gauge window, and are removed from the total aggregate.
 type FixedWindowGauge struct {
 	windowSize     int
 	head           int

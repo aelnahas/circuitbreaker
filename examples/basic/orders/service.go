@@ -20,7 +20,7 @@ type Service interface {
 }
 
 type service struct {
-	interceptor *circuitbreaker.RequestInterceptor
+	interceptor *circuitbreaker.Breaker
 	logger      *log.Logger
 }
 
@@ -37,7 +37,7 @@ func NewService() Service {
 	}
 
 	// we finally make a new intercepter
-	interceptor, err := circuitbreaker.NewRequestInterceptorWithSettings(settings)
+	interceptor, err := circuitbreaker.NewBreakerWithSettings(settings)
 	if err != nil {
 		panic(err)
 	}
